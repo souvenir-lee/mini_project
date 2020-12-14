@@ -11,23 +11,10 @@
 <template>
   <div class='demo-app'>
     <div class='demo-app-sidebar'>
-      <div class='demo-app-sidebar-section'>
-        <h2>Instructions</h2>
-        <ul>
-          <li>Select dates and you will be prompted to create a new event</li>
-          <li>Drag, drop, and resize events</li>
-          <li>Click an event to delete it</li>
-        </ul>
-      </div>
-      <div class='demo-app-sidebar-section'>
-        <label>
-          <input
-            type='checkbox'
-            :checked='calendarOptions.weekends'
-            @change='handleWeekendsToggle'
-          />
-          toggle weekends
-        </label>
+      <the-header></the-header>
+      <div v-if="check">
+        djls
+        <Something></Something>
       </div>
       <div class='demo-app-sidebar-section'>
         <h2>All Events ({{ currentEvents.length }})</h2>
@@ -55,20 +42,28 @@
 
 <script lang="ts">
 import Vue from 'vue'
-import FullCalendar from '@fullcalendar/vue'
+import FullCalendar, {CalendarOptions, DateSelectArg, EventClickArg, EventApi} from '@fullcalendar/vue'
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import { INITIAL_EVENTS, createEventId } from './event-utlis.js'
 import TheHeader from '../components/TheHeader.vue'
+import Something from '../components/Something.vue'
 
 export default Vue.extend({
   components: {
     FullCalendar,
     TheHeader,
+    Something
   },
   data() {
     return {
-      calendarOptions: {
+      check: false,
+      clickData : null,
+    }
+  },
+  computed: {
+    calendarOptions(): CalendarOptions {
+      return {
         plugins: [interactionPlugin, dayGridPlugin],
         initialView: 'dayGridMonth',
         headerToolbar: {
@@ -78,36 +73,20 @@ export default Vue.extend({
         },
         titleFormat : { year: 'numeric', month: 'short', day: 'numeric' },
         selectable: true,
-        dateClick : function(info : any){
-          alert('Clicked on: ' + info.dateStr);
-       },
         initialEvents: INITIAL_EVENTS,
         editable: true,
-        selectMirror: true,
         dayMaxEvents: true,
-        weekends: true,
-        // select: this.handleDateSelect,
-        // eventClick: this.handleEventClick,
-        // eventsSet: this.handleEvents
-          // { 이벤트 동적으로 넣기
-          //   start: '2020-12-11T10:00:00',
-          //   end: '2020-12-11T16:00:00',
-          //   display: 'background',
-          //   color: '#ff9f89'
-          // },
-        //],
-        // initialEvents: [
-        //   { title: 'nice event', start: new Date() }
-        // ]
-      },
-      currentEvents: []
+        select: this.handleDateSelect,
+        eventClick: this.handleEventClick,
+        eventsSet: this.handleEvents,
+      }
+    },
+    currentEvents() :EventApi[] { //이걸 store에 달아보면 좋을 듯
+      return []
     }
   },
   methods: {
-   handleWeekendsToggle() {
-      this.calendarOptions.weekends = !this.calendarOptions.weekends // update a property
-    },
-    select(selectInfo :any) :void {
+    handleDateSelect(selectInfo :DateSelectArg) {
       let title = prompt('Please enter a new title for your event')
       let calendarApi = selectInfo.view.calendar
 
@@ -119,16 +98,19 @@ export default Vue.extend({
           title,
           start: selectInfo.startStr,
           end: selectInfo.endStr,
-          allDay: selectInfo.allDay
+          editable: true,
         })
       }
     },
-    eventClick(clickInfo : any) {
-      if (confirm(`Are you sure you want to delete the event '${clickInfo.event.title}'`)) {
-        clickInfo.event.remove()
-      }
+    handleEventClick(clickInfo :EventClickArg) {
+      this.check = !this.check
+      this.clickData = clickInfo.event.title
+      console.log(this.check)
+      // if (confirm(`Are you sure you want to delete the event '${clickInfo.event.title}'`)) {
+      //   clickInfo.event.remove()
+      // }
     },
-    eventsSet(events :any) {
+    handleEvents(events :EventApi[]) {
       this.currentEvents = events
     }
   }
