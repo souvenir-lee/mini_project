@@ -1,22 +1,9 @@
-<!------
 <template>
-  <div class="container">
+  <div class='container'>
     <the-header></the-header>
-    <FullCalendar :options='calendarOptions' @click="dateClick"/>
-    <router-link to="/payment">route</router-link>
-    <dialog v-if="clickView"></dialog>
-  </div>
-</template>
----->
-<template>
-  <div class='demo-app'>
-    <div class='demo-app-sidebar'>
-      <the-header></the-header>
-      <div v-if="check">
-        djls
-        <Something></Something>
-      </div>
-      <div class='demo-app-sidebar-section'>
+    <div class='sidenav'>
+      <Menu :clickData='clickData' :check="check" :style="switchMenuStyle"></Menu>
+      <!-- <div class='demo-app-sidebar-section'>
         <h2>All Events ({{ currentEvents.length }})</h2>
         <ul>
           <li v-for='event in currentEvents' :key='event.id'>
@@ -24,12 +11,13 @@
             <i>{{ event.title }}</i>
           </li>
         </ul>
-      </div>
+      </div> -->
     </div>
     <div class='demo-app-main'>
       <FullCalendar
-        class='demo-app-calendar'
+        id='calendar'
         :options='calendarOptions'
+        :style="switchCalStyle"
       >
         <template v-slot:eventContent='arg'>
           <b>{{ arg.timeText }}</b>
@@ -47,18 +35,19 @@ import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import { INITIAL_EVENTS, createEventId } from './event-utlis.js'
 import TheHeader from '../components/TheHeader.vue'
-import Something from '../components/Something.vue'
+import Menu from '../components/Menu.vue'
 
 export default Vue.extend({
   components: {
     FullCalendar,
     TheHeader,
-    Something
+    Menu
   },
   data() {
     return {
       check: false,
-      clickData : null,
+      clickData : {} as EventClickArg,
+      currentEvents: [] as EventApi[]
     }
   },
   computed: {
@@ -67,9 +56,9 @@ export default Vue.extend({
         plugins: [interactionPlugin, dayGridPlugin],
         initialView: 'dayGridMonth',
         headerToolbar: {
-          left: 'prev,next today',
+          left: 'prev today',
           center: 'title',
-          right: ''
+          right: 'next'
         },
         titleFormat : { year: 'numeric', month: 'short', day: 'numeric' },
         selectable: true,
@@ -81,9 +70,20 @@ export default Vue.extend({
         eventsSet: this.handleEvents,
       }
     },
-    currentEvents() :EventApi[] { //이걸 store에 달아보면 좋을 듯
-      return []
-    }
+    switchCalStyle() {
+      if(!this.check){ //close
+        return { marginLeft :"auto" } 
+      } else { //open
+        return { marginLeft :"15rem" } 
+      }
+    },
+    switchMenuStyle() {
+      if(!this.check){ //close
+        return { width :"auto", display: "none" } 
+      } else { //open
+        return { width :"15rem" } 
+      }
+		},
   },
   methods: {
     handleDateSelect(selectInfo :DateSelectArg) {
@@ -102,22 +102,22 @@ export default Vue.extend({
         })
       }
     },
+    handleEvents(events :EventApi[]) {
+      this.currentEvents = events
+    },
     handleEventClick(clickInfo :EventClickArg) {
       this.check = !this.check
-      this.clickData = clickInfo.event.title
-      console.log(this.check)
+      this.clickData = clickInfo
+
       // if (confirm(`Are you sure you want to delete the event '${clickInfo.event.title}'`)) {
       //   clickInfo.event.remove()
       // }
     },
-    handleEvents(events :EventApi[]) {
-      this.currentEvents = events
-    }
   }
 })
 </script>
 
-<style>
+<style lang="scss" scoped>
 html, body {
   margin: 0;
   padding: 0;
@@ -132,30 +132,37 @@ html, body {
   text-align: center;
 }
 
-.title {
-  font-family: 'Quicksand', 'Source Sans Pro', -apple-system, BlinkMacSystemFont,
-    'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  display: block;
-  font-weight: 300;
-  font-size: 100px;
-  color: #35495e;
-  letter-spacing: 1px;
-}
-
-.subtitle {
-  font-weight: 300;
-  font-size: 42px;
-  color: #526488;
-  word-spacing: 5px;
-  padding-bottom: 15px;
-}
-
-.links {
-  padding-top: 15px;
-}
-
 #calendar {
   max-width: 1100px;
+  max-height: 700px;
   margin: 40px auto;
+  transition: margin-left .5s;
+  padding: 16px;
+}
+
+.sidenav {
+  height: 100%;
+  width: 0;
+  position: fixed;
+  z-index: 1;
+  top: 0;
+  left: 0;
+  background-color: #111;
+  overflow-x: hidden;
+  transition: 0.5s;
+  padding-top: 10rem;
+}
+
+.sidenav .closebtn {
+  position: absolute;
+  top: 0;
+  right: 25px;
+  font-size: 36px;
+  margin-left: 50px;
+}
+
+#main {
+  transition: margin-left .5s;
+  padding: 16px;
 }
 </style>

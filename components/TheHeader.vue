@@ -5,7 +5,8 @@
 </template>
 <style scoped>
   h2{
-    font: 15rem;
-    margin: 2rem;
+    font-size: 2.5rem;
+    margin: 1rem 0rem 0rem 0rem;
+    padding-bottom: 0;
   }
 </style>
