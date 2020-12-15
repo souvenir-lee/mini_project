@@ -1,23 +1,21 @@
 <template>
   <div class='container'>
-    <the-header></the-header>
     <div class='sidenav'>
-      <Menu :clickData='clickData' :check="check" :style="switchMenuStyle"></Menu>
-      <!-- <div class='demo-app-sidebar-section'>
-        <h2>All Events ({{ currentEvents.length }})</h2>
-        <ul>
-          <li v-for='event in currentEvents' :key='event.id'>
-            <b>{{ event.startStr }}</b>
-            <i>{{ event.title }}</i>
-          </li>
-        </ul>
-      </div> -->
+      <Menu 
+        :clickData='clickData' 
+        :check="check" 
+        :style="switchMenuStyle" 
+        @handle-event-click="handleEventClick"
+      ></Menu>
     </div>
-    <div class='demo-app-main'>
+    <div 
+      class='demo-app-main' 
+      :style="switchCalStyle"
+    >
+      <AddContent></AddContent>
       <FullCalendar
         id='calendar'
         :options='calendarOptions'
-        :style="switchCalStyle"
       >
         <template v-slot:eventContent='arg'>
           <b>{{ arg.timeText }}</b>
@@ -29,115 +27,199 @@
 </template>
 
 <script lang="ts">
-import Vue from 'vue'
+import {
+  defineComponent,
+  ref,
+  Ref,
+  computed,
+  reactive,
+} from '@nuxtjs/composition-api'
 import FullCalendar, {CalendarOptions, DateSelectArg, EventClickArg, EventApi} from '@fullcalendar/vue'
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import { INITIAL_EVENTS, createEventId } from './event-utlis.js'
-import TheHeader from '../components/TheHeader.vue'
 import Menu from '../components/Menu.vue'
+import AddContent from '../components/payment/AddContent.vue'
 
-export default Vue.extend({
+export default defineComponent({
   components: {
     FullCalendar,
-    TheHeader,
-    Menu
+    Menu,
+    AddContent
   },
-  data() {
-    return {
-      check: false,
-      clickData : {} as EventClickArg,
-      currentEvents: [] as EventApi[]
-    }
-  },
-  computed: {
-    calendarOptions(): CalendarOptions {
-      return {
-        plugins: [interactionPlugin, dayGridPlugin],
-        initialView: 'dayGridMonth',
-        headerToolbar: {
-          left: 'prev today',
-          center: 'title',
-          right: 'next'
-        },
-        titleFormat : { year: 'numeric', month: 'short', day: 'numeric' },
-        selectable: true,
-        initialEvents: INITIAL_EVENTS,
-        editable: true,
-        dayMaxEvents: true,
-        select: this.handleDateSelect,
-        eventClick: this.handleEventClick,
-        eventsSet: this.handleEvents,
-      }
-    },
-    switchCalStyle() {
-      if(!this.check){ //close
-        return { marginLeft :"auto" } 
-      } else { //open
-        return { marginLeft :"15rem" } 
-      }
-    },
-    switchMenuStyle() {
-      if(!this.check){ //close
-        return { width :"auto", display: "none" } 
-      } else { //open
-        return { width :"15rem" } 
-      }
-		},
-  },
-  methods: {
-    handleDateSelect(selectInfo :DateSelectArg) {
-      let title = prompt('Please enter a new title for your event')
-      let calendarApi = selectInfo.view.calendar
+  setup(){
+    const check:Ref<boolean> = ref<boolean>(false)
+    const clickData  = ref<EventClickArg>()
+    const currentEvents = ref<EventApi[]>()
+    //const currentEvents = computed(() =>[] as EventApi[])
+    
 
-      calendarApi.unselect() // clear date selection
-
-      if (title) {
-        calendarApi.addEvent({
-          id: createEventId(),
-          title,
-          start: selectInfo.startStr,
-          end: selectInfo.endStr,
+    const calendarOptions = computed(() :CalendarOptions => {
+      return{
+          plugins: [interactionPlugin, dayGridPlugin],
+          initialView: 'dayGridMonth',
+          headerToolbar: {
+            left: 'prev today',
+            center: 'title',
+            right: 'next'
+          },
+          titleFormat : { year: 'numeric', month: 'short', day: 'numeric' },
+          selectable: true,
+          initialEvents: INITIAL_EVENTS,
           editable: true,
-        })
+          eventTimeFormat: {
+            hour: 'numeric',
+            minute: '2-digit',
+            meridiem: 'short'
+          },
+          select: handleDateSelect,
+          eventClick: handleEventClick,
+          eventsSet: handleEvents,
+        }
+      })
+
+      const switchCalStyle = computed(() => {
+        if(!check.value){ //close
+          return { marginLeft :"auto" } 
+        } else { //open
+          return { marginLeft :"15rem" } 
+        }
+      })
+      const switchMenuStyle = computed(() => {
+        if(!check.value){ //close
+          return { width :"auto", display: "none" } 
+        } else { //open
+          return { width :"15rem" } 
+        }
+      })
+      
+
+      const handleDateSelect = (selectInfo :DateSelectArg) => {
+        let title = prompt('Please enter a new title for your event')
+        //<input type='time'/><br>
+        let calendarApi = selectInfo.view.calendar
+
+        calendarApi.unselect() // clear date selection
+
+        if (title) {
+          calendarApi.addEvent({
+            id: createEventId(),
+            title,
+            start: selectInfo.startStr,
+            end: selectInfo.endStr,
+            editable: true,
+          })
+        }
+      }
+      const handleEvents = (events :EventApi[]) => {
+        currentEvents.value = events
+      }
+      const handleEventClick = (clickInfo :EventClickArg) => {
+        check.value = !check.value
+        clickData.value = clickInfo
+      }
+      
+      return {
+        check,
+        clickData,
+        calendarOptions,
+        switchCalStyle,
+        switchMenuStyle,
+        handleEventClick
       }
     },
-    handleEvents(events :EventApi[]) {
-      this.currentEvents = events
-    },
-    handleEventClick(clickInfo :EventClickArg) {
-      this.check = !this.check
-      this.clickData = clickInfo
+  })
+  // data() {
+  //   return {
+  //     check: false,
+  //     clickData : {} as EventClickArg,
+  //     currentEvents: [] as EventApi[]
+  //   }
+  // },
+  // computed: {
+  //   calendarOptions(): CalendarOptions {
+  //     return {
+  //       plugins: [interactionPlugin, dayGridPlugin],
+  //       initialView: 'dayGridMonth',
+  //       headerToolbar: {
+  //         left: 'prev today',
+  //         center: 'title',
+  //         right: 'next'
+  //       },
+  //       titleFormat : { year: 'numeric', month: 'short', day: 'numeric' },
+  //       selectable: true,
+  //       initialEvents: INITIAL_EVENTS,
+  //       editable: true,
+  //       dayMaxEvents: true,
+  //       eventTimeFormat: {
+  //         hour: 'numeric',
+  //         minute: '2-digit',
+  //         meridiem: 'short'
+  //       },
+  //       select: this.handleDateSelect,
+  //       eventClick: this.handleEventClick,
+  //       eventsSet: this.handleEvents,
+  //     }
+  //   },
+  //   switchCalStyle() {
+  //     if(!this.check){ //close
+  //       return { marginLeft :"auto" } 
+  //     } else { //open
+  //       return { marginLeft :"15rem" } 
+  //     }
+  //   },
+  //   switchMenuStyle() {
+  //     if(!this.check){ //close
+  //       return { width :"auto", display: "none" } 
+  //     } else { //open
+  //       return { width :"15rem" } 
+  //     }
+	// 	},
+  // },
+  // methods: {
+  //   handleDateSelect(selectInfo :DateSelectArg) {
+  //     let title = prompt('Please enter a new title for your event')
+  //     let calendarApi = selectInfo.view.calendar
 
-      // if (confirm(`Are you sure you want to delete the event '${clickInfo.event.title}'`)) {
-      //   clickInfo.event.remove()
-      // }
-    },
-  }
-})
+  //     calendarApi.unselect() // clear date selection
+
+  //     if (title) {
+  //       calendarApi.addEvent({
+  //         id: createEventId(),
+  //         title,
+  //         start: selectInfo.startStr,
+  //         end: selectInfo.endStr,
+  //         editable: true,
+  //       })
+  //     }
+  //   },
+  //   handleEvents(events :EventApi[]) {
+  //     this.currentEvents = events
+  //   },
+  //   handleEventClick(clickInfo :EventClickArg) {
+  //     this.check = !this.check
+  //     this.clickData = clickInfo
+  //   },
+  // }
+//})
 </script>
 
 <style lang="scss" scoped>
-html, body {
-  margin: 0;
-  padding: 0;
-  font-family: Arial, Helvetica Neue, Helvetica, sans-serif;
-  font-size: 14px;
-}
 
 .container {
   margin: 0 auto;
   min-height: 100vh;
   align-items: center;
   text-align: center;
+  transition: margin-left .5s;
+  padding: 0px 16px 16px 16px;
 }
 
 #calendar {
   max-width: 1100px;
   max-height: 700px;
   margin: 40px auto;
-  transition: margin-left .5s;
-  padding: 16px;
+  // transition: margin-left .5s;
 }
 
 .sidenav {
